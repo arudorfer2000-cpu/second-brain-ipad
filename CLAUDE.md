@@ -1,0 +1,20 @@
+# Second Brain iPad – project rules
+
+- UI, docs, comments, commit messages: **English only**, even though the chat with the owner is German.
+- Never commit notes, backups, keys, passcodes. App code only. `scripts/audit.mjs` enforces this.
+- The app never sends note content anywhere: no network calls other than loading its own files. CSP `connect-src 'self'`.
+- Ask AI always shows the approval screen with the exact text. It cannot be disabled.
+- Every tap target >= 44 px. Tested.
+- Both themes (light/dark) must work on every screen. Colours only via CSS tokens.
+- A failed check sends only that step back (max 3 attempts). Never weaken a check to pass.
+- Any correction from the owner becomes a rule here.
+- Resume: read CLAUDE.md, plan.md, progress.md, checks.md.
+- Everything is used on the iPad, not on the PC (owner correction 2026-10-11). Every feature, including Enterprise Search and filing of Office documents, must work inside the app. The PC is only for the transfer tool. Never answer a feature request with a PC script.
+- Filing documents: originals are stored encrypted in the `files` store, never changed; every filing goes through a review screen the owner confirms; password-protected files are reported and never opened; duplicates are found by SHA-256.
+- WhatsApp: chats live only in the separate space (own passphrase, own key, `wa:` records in the `files` store). Never mix chat content into the main vault, its search, Digest or Ask AI. Group chats are excluded by default; every import goes through a review screen; summary-only is the default.
+- Backup format: binary file records carry `bin: 1`; JSON-sealed records (`log`, `wa:*`) stay as they are. Never convert a record without that flag check (a restore bug corrupted sealed JSON once and was caught by the round-trip test).
+- Deadlines follow the vault tool convention (`type: verpflichtung`, `rhythmus`, `start`, `zuletzt`). Do not invent other field names for recurring items. Date math must stay equal to `struktur.py next_due`; keep the hand-computed unit tests.
+- Weekly review follows the vault tool (`struktur.py review`): week = 7 days, month = 30 days, inclusive, local time; new = created in period, changed = edited and not new. Saving a report happens only on tap. Dates shown or written by the app are local dates, never UTC.
+- Tests must be able to fail: after one of my own assertions matched nothing, assert that a regex matched before comparing values.
+- Thinking modes only add text to the Ask AI request; the approval screen still shows the exact text and nothing is sent. The top Ask AI button always starts in Answer mode.
+- Kanban moves change only the `status` line of the note (via `setFm`); never rewrite other parts of the note. Status word lists are language data and live between the language-data markers in `src/kanban.js`.

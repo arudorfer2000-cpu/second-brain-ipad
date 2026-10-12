@@ -1,0 +1,25 @@
+// Captures real screenshots of the built app (sample content) for the manual. Dev tool, not part of the app.
+import { mkdirSync } from 'node:fs'; import { start, setup, importVault } from '../tests/helpers.mjs';
+const { server, browser, url } = await start({ port: 4398 });
+const out = process.argv[2] || 'shots/manual'; mkdirSync(out, { recursive: true });
+const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 }, permissions: ['clipboard-read', 'clipboard-write'], deviceScaleFactor: 1 });
+const page = await ctx.newPage();
+const go = async (h) => { await page.evaluate((x) => { location.hash = x; }, h); await page.waitForTimeout(250); };
+const snap = (n) => page.screenshot({ path: `${out}/${n}.png` });
+await page.goto(url); await page.waitForFunction(() => window.__sbReady); await snap('setup');
+await page.fill('#s1', '482913'); await page.fill('#s2', '482913'); await page.click('#sb'); await page.waitForSelector('#rk'); await snap('recovery'); await page.check('#rkok'); await page.click('#rkgo'); await page.waitForSelector('.welcome'); await page.waitForTimeout(3000);
+await importVault(page);
+const H = encodeURIComponent('20 Decisions/Heating system decision.md');
+await go('#/import'); await snap('import');
+await go('#/'); await snap('home-light');
+await go('#/note/' + H); await snap('article-light');
+await go('#/note/' + H + '?tab=edit'); await snap('edit');
+await go('#/search?q=' + encodeURIComponent('insurance type:decision')); await snap('search');
+await go('#/ask'); await page.fill('#aq', 'What did I decide about insurance?'); for (const t of ['Heating', 'Insurance']) { await page.fill('#af', t); await page.dispatchEvent('#af', 'input'); await page.locator('[data-act=asksel]').first().check(); } await page.fill('#af', ''); await page.dispatchEvent('#af', 'input'); await page.click('[data-act=review]'); await page.waitForSelector('#review'); await snap('ask-review');
+await go('#/graph'); await page.locator('circle.hit').first().click({ force: true }); await snap('graph-light');
+await go('#/health'); await snap('health'); await go('#/digest?d=7'); await snap('digest'); await go('#/backup'); await snap('backup');
+await page.click('.top [data-act=theme][data-v=dark]'); await go('#/'); await snap('home-dark'); await go('#/note/' + H); await snap('article-dark'); await go('#/graph'); await snap('graph-dark'); await go('#/settings'); await snap('settings-dark');
+await page.click('.top [data-act=theme][data-v=light]');
+await page.setViewportSize({ width: 820, height: 1180 }); await go('#/'); await snap('home-portrait'); await page.click('[data-act=menu]'); await page.waitForTimeout(150); await snap('menu-portrait'); await go('#/note/' + H); await snap('article-portrait');
+await page.setViewportSize({ width: 1376, height: 1032 }); await go('#/note/' + H); await snap('article-13inch');
+await browser.close(); server.close();
