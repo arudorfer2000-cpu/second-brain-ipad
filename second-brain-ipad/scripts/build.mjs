@@ -1,0 +1,17 @@
+import { build } from 'esbuild'; import { cpSync, mkdirSync, rmSync, writeFileSync, readdirSync, statSync, readFileSync } from 'node:fs'; import { createHash } from 'node:crypto'; import { join } from 'node:path';
+rmSync('dist', { recursive: true, force: true }); mkdirSync('dist', { recursive: true });
+await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', target: ['safari16'], outfile: 'dist/app.js', legalComments: 'none', logLevel: 'warning' });
+await build({ entryPoints: ['src/pdf-lib.js'], bundle: true, minify: true, format: 'iife', target: ['safari16'], outfile: 'dist/pdf-lib.js', legalComments: 'none', logLevel: 'error', define: { 'import.meta.url': '"file:///"' } });
+await build({ entryPoints: ['node_modules/pdfjs-dist/build/pdf.worker.min.mjs'], bundle: false, format: 'esm', outfile: 'dist/pdf.worker.js', legalComments: 'none', logLevel: 'error', minify: false });
+cpSync('public', 'dist', { recursive: true });
+writeFileSync('dist/manifest.json', JSON.stringify({ name: 'Second Brain', short_name: 'Second Brain', description: 'Private wiki-style notes, encrypted on this device.', start_url: './', scope: './', display: 'standalone', orientation: 'any', background_color: '#F8F9FA', theme_color: '#3366CC', icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' }, { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }] }, null, 1));
+const files = []; (function walk(d, rel = '') { for (const f of readdirSync(d)) { const p = join(d, f), r = rel ? rel + '/' + f : f; statSync(p).isDirectory() ? walk(p, r) : files.push(r); } })('dist');
+const hash = createHash('sha256'); for (const f of files.sort()) hash.update(f).update(readFileSync(join('dist', f)));
+const ver = hash.digest('hex').slice(0, 12);
+const sw = `const CACHE='sb-${ver}';const FILES=${JSON.stringify(['./', ...files.filter((f) => f !== 'sw.js')])};
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request).catch(()=>caches.match('./'))))});
+`;
+writeFileSync('dist/sw.js', sw);
+console.log('built', files.length + 1, 'files, version', ver);
