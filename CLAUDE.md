@@ -18,3 +18,4 @@
 - Tests must be able to fail: after one of my own assertions matched nothing, assert that a regex matched before comparing values.
 - Thinking modes only add text to the Ask AI request; the approval screen still shows the exact text and nothing is sent. The top Ask AI button always starts in Answer mode.
 - Kanban moves change only the `status` line of the note (via `setFm`); never rewrite other parts of the note. Status word lists are language data and live between the language-data markers in `src/kanban.js`.
+- In e2e tests never wait for an element that the current page already contains (a heading shared by the old and the new page passes before the navigation happens). Wait for the URL or for something only the target page has. Run new e2e tests several times and once with `TZ=UTC`, because the GitHub runner uses UTC and is slower (found when run #1 failed in CI on a race that passed on my machine).

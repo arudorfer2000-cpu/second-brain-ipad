@@ -40,7 +40,7 @@ test('R2 month switch and moving the end date', async () => {
 test('R2 save as report: only on tap, links resolve, second tap updates the same note', async () => {
   await go('#/search?q=' + encodeURIComponent('type:report')); assert.match(await T('.main'), /0 results/, 'nothing saved before the tap');
   await go('#/'); const redBefore = (await T('.home')).match(/Missing pages \(red links\)\s*(\d+)/); assert.ok(redBefore, 'home shows the red link count');
-  await go('#/review'); await page.click('[data-act=review-save]'); await page.waitForSelector('h1:has-text("Weekly review ")'); assert.match(page.url(), /Reports%2FReview-week-/);
+  await go('#/review'); await page.click('[data-act=review-save]'); await page.waitForURL(/Reports%2FReview-week-/); await page.waitForSelector('.prose'); assert.match(page.url(), /Reports%2FReview-week-/);
   const rp = decodeURIComponent(page.url().split('#/note/')[1]); assert.equal(rp, `Reports/Review-week-${off(0)}.md`); assert.match(await T('.main'), /\[\[Projects\/Fresh\]\]|Fresh/);
   await go('#/review'); await page.click('[data-act=review-save]'); await page.waitForTimeout(400); await go('#/search?q=' + encodeURIComponent('type:report')); assert.match(await T('.main'), /1 result\b/);
   await go('#/note/' + encodeURIComponent(rp) + '?tab=edit'); const txt = await page.inputValue('#ed'); assert.match(txt, /^---\ntype: report\ndescription: Weekly review /); assert.match(txt, /- \[\[Projects\/Fresh\]\]/); assert.match(txt, /- \[ \] call plumber \(\[\[Projects\/Fresh\]\]\)/); assert.match(txt, /## Thinking loop/);

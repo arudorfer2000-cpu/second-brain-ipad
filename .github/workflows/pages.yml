@@ -14,6 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,15 +22,41 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - name: Show browser and fonts (for diagnosis)
+        run: |
+          mkdir -p logs
+          { /usr/bin/google-chrome --version; node -v; python3 --version; fc-list | wc -l; } 2>&1 | tee logs/env.log || true
+      - name: Unit and browser tests
+        shell: bash
+        run: npm test 2>&1 | tee logs/test.log
         env:
           CHROME_PATH: /usr/bin/google-chrome
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: npm run test:pc
-      - run: npm run audit
+      - name: PC tool tests
+        shell: bash
+        run: npm run test:pc 2>&1 | tee logs/pc.log
+      - name: Audit
+        shell: bash
+        run: npm run audit 2>&1 | tee logs/audit.log
       - run: npm run build
+      - name: Explain a failure on the summary page
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo '## What failed'
+            echo 'Copy everything below and send it to Claude.'
+            for f in logs/env.log logs/pc.log logs/audit.log; do [ -f "$f" ] && { echo "### $f"; echo '```'; tail -n 30 "$f"; echo '```'; }; done
+            if [ -f logs/test.log ]; then
+              echo '### failed tests'; echo '```'
+              grep -E "^not ok|^    not ok|^# (tests|pass|fail)" logs/test.log | head -40
+              echo '```'; echo '### details'; echo '```'
+              grep -E -A14 "^not ok|^    not ok" logs/test.log | grep -E "not ok|error:|Error|expected|actual|Timeout|waiting for|message" | head -60
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

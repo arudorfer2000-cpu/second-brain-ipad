@@ -42,3 +42,7 @@
 - Found by the checks: after a thinking button the mode stayed on for later Ask AI use; fixed so the top button starts in Answer. My own test mistakes (note path, wrong save selector, lock button location) were fixed in the tests, no check was weakened.
 - Not verified: real iPad, and how well the prompts work in the Claude app (wording is a first version; tell me what to change).
 - Open: save-from-chat, secret guard, search measurement, raw sources, convert note, OCR for scans and photos.
+
+## 2026-10-12 First CI run failed, fixed
+- Run #1 of the Pages workflow failed in the build job (nothing was published). Reproduced from a fresh clone with `npm ci` and `TZ=UTC`: one e2e test (weekly review, save as report) was flaky. Cause: the test waited for a heading that the old page also had, so it sometimes read the URL before the app had navigated. The app itself was correct. Fixed the wait (URL plus a note-only element), 4 of 4 repeat runs and a full run pass. No check was weakened.
+- Run #2 failed too, with all steps green in a clean clone (UTC, 2 CPU cores). The GitHub error text was not visible from here, so the workflow now logs each step and, on failure, writes the failing tests and their messages to the run's summary page (tested with a deliberately failing test). Also prints Chrome, Node, Python versions and the font count.

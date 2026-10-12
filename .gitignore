@@ -4,3 +4,4 @@ shots/
 *.sbbak
 .env
 github-user.txt
+logs/
